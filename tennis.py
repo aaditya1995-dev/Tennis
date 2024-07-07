@@ -2,7 +2,7 @@ import streamlit as st
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-True
+
 # Function to check availability
 def check_availability(url):
     # Set up Selenium options
