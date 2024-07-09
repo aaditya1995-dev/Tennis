@@ -22,12 +22,17 @@ def check_availability(url):
     try:
         # Load the webpage
         driver.get(url)
+        st.write('web page loaded')
 
         # Wait for the necessary elements to load
         driver.implicitly_wait(2)  # Adjust as needed
 
         # Find all elements with class 'book-interval not-booked'
+        # Find all elements with class 'book-interval not-booked'
         not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
+
+        if not_booked_elements is False:
+            st.write('nothing found')
 
         # Process each found element
         for element in not_booked_elements:
@@ -96,7 +101,6 @@ if st.session_state.selected_date:
     for location_name, url_template in location_urls.items():
         url = url_template.format(date=selected_date)
         available_slots = check_availability(url)
-        st.write("Yay")
         if available_slots:
             with st.container():
                 st.markdown(f"### {location_name}")
