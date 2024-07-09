@@ -25,7 +25,7 @@ def check_availability(url):
         driver.get(url)
 
         # Wait for the necessary elements to load
-        driver.implicitly_wait(5)  # Adjust as needed
+        driver.implicitly_wait(2)  # Adjust as needed
 
         # Find all elements with class 'book-interval not-booked'
         not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
