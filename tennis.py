@@ -57,9 +57,12 @@ def check_availability(url):
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
 
-# Session state to handle date selection and reset functionality
+# Session state to handle date and timeslot selection
 if 'selected_date' not in st.session_state:
     st.session_state.selected_date = None
+
+if 'selected_timeslot_range' not in st.session_state:
+    st.session_state.selected_timeslot_range = None
 
 # Get the current date
 today = datetime.today()
@@ -84,35 +87,52 @@ if st.session_state.selected_date is None:
             st.session_state.selected_date_display = next_seven_days[i]
             st.experimental_rerun()
 
-# If a date is selected, show the selected date and a reset button
+# If a date is selected, show the selected date and allow timeslot range selection
 if st.session_state.selected_date:
     st.write(f"Selected date: **{st.session_state.selected_date_display}**")
     if st.button("Reset"):
         st.session_state.selected_date = None
         st.experimental_rerun()
 
-    # Define URLs to check
-    selected_date = st.session_state.selected_date
-    for location_name, url_template in location_urls.items():
-        url = url_template.format(date=selected_date)
-        available_slots = check_availability(url)
-        if available_slots:
-            with st.container():
-                st.markdown(f"### {location_name}")
-                for slot, info in sorted(available_slots.items()):
-                    count = info['count']
-                    cost = info['cost']
-                    if cost is not None:
-                        st.markdown(
-                            f"**{slot}** &nbsp;&nbsp; <span style='color:grey;'>{count} court(s) available, Cost: {cost}</span> &nbsp;&nbsp;"
-                            f"<a href='{url}' style='background-color:green; color:white; padding:5px 10px; text-decoration:none; border-radius:5px;'>Book</a>",
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        st.markdown(
-                            f"**{slot}** &nbsp;&nbsp; <span style='color:grey;'>{count} court(s) available</span> &nbsp;&nbsp;"
-                            f"<a href='{url}' style='background-color:green; color:white; padding:5px 10px; text-decoration:none; border-radius:5px;'>Book</a>",
-                            unsafe_allow_html=True
-                        )
-        else:
-            st.write(f"No available slots found for {location_name}.")
+    # Allow the user to select a timeslot range using a slider
+    st.write("Select a timeslot range:")
+    timeslot_start, timeslot_end = st.slider("Select timeslot range (hour of day):", 0, 23, (0, 23), 1)
+
+    selected_timeslot_range = (timeslot_start, timeslot_end)
+    st.session_state.selected_timeslot_range = selected_timeslot_range
+
+    # Display availability based on selected date and timeslot range
+    if st.button("Check Availability"):
+        st.write(f"Checking availability for {st.session_state.selected_date_display} - Timeslot range: {selected_timeslot_range[0]}:00 - {selected_timeslot_range[1]}:00")
+
+        for location_name, url_template in location_urls.items():
+            url = url_template.format(date=st.session_state.selected_date)
+            available_slots = check_availability(url)
+
+            # Filter availability based on selected timeslot range
+            filtered_slots = {}
+            for slot in available_slots:
+                hour = int(slot.split(':')[0])
+                if timeslot_start <= hour <= timeslot_end:
+                    filtered_slots[slot] = available_slots[slot]
+
+            if filtered_slots:
+                with st.container():
+                    st.markdown(f"### {location_name}")
+                    for slot, info in sorted(filtered_slots.items()):
+                        count = info['count']
+                        cost = info['cost']
+                        if cost is not None:
+                            st.markdown(
+                                f"**{slot}** &nbsp;&nbsp; <span style='color:grey;'>{count} court(s) available, Cost: {cost}</span> &nbsp;&nbsp;"
+                                f"<a href='{url}' style='background-color:green; color:white; padding:5px 10px; text-decoration:none; border-radius:5px;'>Book</a>",
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.markdown(
+                                f"**{slot}** &nbsp;&nbsp; <span style='color:grey;'>{count} court(s) available</span> &nbsp;&nbsp;"
+                                f"<a href='{url}' style='background-color:green; color:white; padding:5px 10px; text-decoration:none; border-radius:5px;'>Book</a>",
+                                unsafe_allow_html=True
+                            )
+            else:
+                st.write(f"No available slots found for {location_name}.")
