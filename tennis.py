@@ -17,7 +17,7 @@ def check_availability(url):
     # Initialize WebDriver
     driver = webdriver.Chrome(options=options)
 
-    available_slots = defaultdict(int)
+    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})  # Using defaultdict with nested dict
 
     try:
         # Load the webpage
@@ -38,7 +38,12 @@ def check_availability(url):
             if booking_slot.startswith('Book at '):
                 booking_slot = booking_slot.replace('Book at ', '')
 
-            available_slots[booking_slot] += 1
+            # Extract cost information
+            cost_element = element.find_element(By.CLASS_NAME, 'cost')
+            cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
+
+            available_slots[booking_slot]['count'] += 1
+            available_slots[booking_slot]['cost'] = cost
 
     except Exception as e:
         st.error(f"An error occurred while processing {url}: {e}")
@@ -47,6 +52,7 @@ def check_availability(url):
         driver.quit()
 
     return available_slots
+
 
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
@@ -93,12 +99,20 @@ if st.session_state.selected_date:
         if available_slots:
             with st.container():
                 st.markdown(f"### {location_name}")
-                for slot in sorted(available_slots.keys()):
-                    count = available_slots[slot]
-                    st.markdown(
-                        f"**{slot}** &nbsp;&nbsp; <span style='color:grey;'>{count} court(s) available</span> &nbsp;&nbsp;"
-                        f"<a href='{url}' style='background-color:green; color:white; padding:5px 10px; text-decoration:none; border-radius:5px;'>Book</a>",
-                        unsafe_allow_html=True
-                    )
+                for slot, info in sorted(available_slots.items()):
+                    count = info['count']
+                    cost = info['cost']
+                    if cost is not None:
+                        st.markdown(
+                            f"**{slot}** &nbsp;&nbsp; <span style='color:grey;'>{count} court(s) available, Cost: {cost}</span> &nbsp;&nbsp;"
+                            f"<a href='{url}' style='background-color:green; color:white; padding:5px 10px; text-decoration:none; border-radius:5px;'>Book</a>",
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.markdown(
+                            f"**{slot}** &nbsp;&nbsp; <span style='color:grey;'>{count} court(s) available</span> &nbsp;&nbsp;"
+                            f"<a href='{url}' style='background-color:green; color:white; padding:5px 10px; text-decoration:none; border-radius:5px;'>Book</a>",
+                            unsafe_allow_html=True
+                        )
         else:
             st.write(f"No available slots found for {location_name}.")
