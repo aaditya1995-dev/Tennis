@@ -22,7 +22,7 @@ def check_availability(url):
     try:
         # Load the webpage
         driver.get(url)
-        st.write('web page loaded')
+        #st.write('web page loaded')
 
         # Wait for the necessary elements to load
         driver.implicitly_wait(2)  # Adjust as needed
