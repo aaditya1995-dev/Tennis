@@ -31,8 +31,8 @@ def check_availability(url):
         # Find all elements with class 'book-interval not-booked'
         not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
 
-        if not_booked_elements is False:
-            st.write('nothing found')
+        if not_booked_elements:
+            st.write('something found')
 
         # Process each found element
         for element in not_booked_elements:
