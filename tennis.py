@@ -22,12 +22,14 @@ def check_availability(url):
     try:
         # Load the webpage
         driver.get(url)
+        st.write(url)
 
         # Wait for the necessary elements to load
         driver.implicitly_wait(2)  # Adjust as needed
 
         # Find all elements with class 'book-interval not-booked'
         not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
+        st.write(not_booked_elements)
 
         # Process each found element
         for element in not_booked_elements:
