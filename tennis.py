@@ -96,6 +96,7 @@ if st.session_state.selected_date:
     for location_name, url_template in location_urls.items():
         url = url_template.format(date=selected_date)
         available_slots = check_availability(url)
+        st.write("Yay")
         if available_slots:
             with st.container():
                 st.markdown(f"### {location_name}")
