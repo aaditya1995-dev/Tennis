@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timedelta
 from collections import defaultdict
-
+from urllib.parse import urlencode
 
 # Function to check availability
 def check_availability(url):
@@ -49,7 +49,6 @@ def check_availability(url):
 
     return available_slots
 
-
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
 
@@ -64,11 +63,11 @@ today = datetime.today()
 next_seven_days = [(today + timedelta(days=i)).strftime("%A, %d %B") for i in range(7)]
 next_seven_dates = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
-# Dictionary to map URLs to location names
+# Dictionary to map URLs to location names (including query parameters)
 location_urls = {
-    "https://regents.parksports.co.uk/Booking/BookByDate": "Regent's Park",
-    "https://clubspark.lta.org.uk/kenningtonpark/Booking/BookByDate": "Kennington Park",
-    "https://clubspark.lta.org.uk/TannerStPark/Booking/BookByDate": "Tanner St. Park"
+    "Regent's Park": "https://regents.parksports.co.uk/Booking/BookByDate#?date={date}&role=guest",
+    "Kennington Park": "https://clubspark.lta.org.uk/kenningtonpark/Booking/BookByDate#?date={date}&role=guest",
+    "Tanner St. Park": "https://clubspark.lta.org.uk/TannerStPark/Booking/BookByDate#?date={date}&role=guest"
 }
 
 # Display buttons for each of the next 7 days if no date is selected
@@ -89,10 +88,8 @@ if st.session_state.selected_date:
 
     # Define URLs to check
     selected_date = st.session_state.selected_date
-    urls = [url.format(date=selected_date) for url in location_urls.keys()]
-
-    for url in urls:
-        location_name = location_urls[url]
+    for location_name, url_template in location_urls.items():
+        url = url_template.format(date=selected_date)
         available_slots = check_availability(url)
         if available_slots:
             with st.container():
