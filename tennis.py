@@ -1,9 +1,11 @@
 import streamlit as st
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from datetime import datetime, timedelta
-from collections import defaultdict
+
+with st.echo():
+    from selenium import webdriver
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.chrome.options import Options
+    from datetime import datetime, timedelta
+    from collections import defaultdict
 
 # Function to check availability
 def check_availability(url):
