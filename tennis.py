@@ -22,7 +22,6 @@ def check_availability(url):
     try:
         # Load the webpage
         driver.get(url)
-        #st.write('web page loaded')
 
         # Wait for the necessary elements to load
         driver.implicitly_wait(2)  # Adjust as needed
@@ -46,8 +45,8 @@ def check_availability(url):
             available_slots[booking_slot]['count'] += 1
             available_slots[booking_slot]['cost'] = cost
 
-        if available_slots == "":
-            st.write("nothing found")
+        if available_slots != "":
+            st.write("something found")
 
     except Exception as e:
         st.error(f"An error occurred while processing {url}: {e}")
