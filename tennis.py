@@ -47,6 +47,7 @@ def check_availability(url):
 
         if available_slots != "":
             st.write("something found")
+            st.write(available_slots)
 
     except Exception as e:
         st.error(f"An error occurred while processing {url}: {e}")
