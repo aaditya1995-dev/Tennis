@@ -2,6 +2,8 @@ import streamlit as st
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from datetime import datetime, timedelta
+
 
 # Function to check availability
 def check_availability(url):
@@ -47,13 +49,15 @@ def check_availability(url):
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
 
-# Input date from the user
-date = st.text_input("Enter the date you want to search for (YYYY-MM-DD):")
+# Generate buttons for the next 7 days
+today = datetime.today()
+date_options = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+selected_date = st.radio("Select a date:", date_options)
 
 # Define URLs to check
 urls = [
-    f"https://regents.parksports.co.uk/Booking/BookByDate?date={date}#?date={date}&role=guest",
-    f"https://clubspark.lta.org.uk/kenningtonpark/Booking/BookByDate#?date={date}&role=guest"
+    f"https://regents.parksports.co.uk/Booking/BookByDate?date={selected_date}#?date={selected_date}&role=guest",
+    f"https://clubspark.lta.org.uk/kenningtonpark/Booking/BookByDate#?date={selected_date}&role=guest"
 ]
 
 # Check availability button
