@@ -28,11 +28,7 @@ def check_availability(url):
         driver.implicitly_wait(2)  # Adjust as needed
 
         # Find all elements with class 'book-interval not-booked'
-        # Find all elements with class 'book-interval not-booked'
         not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
-
-        if not_booked_elements:
-            st.write('something found')
 
         # Process each found element
         for element in not_booked_elements:
@@ -49,6 +45,9 @@ def check_availability(url):
 
             available_slots[booking_slot]['count'] += 1
             available_slots[booking_slot]['cost'] = cost
+
+        if available_slots == "":
+            st.write("nothing found")
 
     except Exception as e:
         st.error(f"An error occurred while processing {url}: {e}")
