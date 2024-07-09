@@ -45,10 +45,6 @@ def check_availability(url):
             available_slots[booking_slot]['count'] += 1
             available_slots[booking_slot]['cost'] = cost
 
-        if available_slots != "":
-            st.write("something found")
-            st.write(available_slots)
-
     except Exception as e:
         st.error(f"An error occurred while processing {url}: {e}")
     finally:
