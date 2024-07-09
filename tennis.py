@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timedelta
 from collections import defaultdict
-
+True
 # Function to check availability
 def check_availability(url):
     # Set up Selenium options
