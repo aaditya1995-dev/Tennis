@@ -53,6 +53,9 @@ def check_availability(url):
 
     return available_slots
 
+# Helper function to generate time labels
+def generate_time_labels():
+    return [f"{hour:02d}:00" for hour in range(24)]
 
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
@@ -94,16 +97,22 @@ if st.session_state.selected_date:
         st.session_state.selected_date = None
         st.experimental_rerun()
 
-    # Allow the user to select a timeslot range using a slider
+    # Allow the user to select a timeslot range using a select_slider
     st.write("Select a timeslot range:")
-    timeslot_start, timeslot_end = st.slider("Select timeslot range (hour of day):", 0, 23, (0, 23), 1)
+    time_labels = generate_time_labels()
+    timeslot_start, timeslot_end = st.select_slider(
+        "Select timeslot range (hour of day):",
+        options=time_labels,
+        value=(time_labels[0], time_labels[-1])
+    )
 
-    selected_timeslot_range = (timeslot_start, timeslot_end)
+    # Convert selected timeslot range to integers for processing
+    selected_timeslot_range = (int(timeslot_start.split(':')[0]), int(timeslot_end.split(':')[0]))
     st.session_state.selected_timeslot_range = selected_timeslot_range
 
     # Display availability based on selected date and timeslot range
     if st.button("Check Availability"):
-        st.write(f"Checking availability for {st.session_state.selected_date_display} - Timeslot range: {selected_timeslot_range[0]}:00 - {selected_timeslot_range[1]}:00")
+        st.write(f"Checking availability for {st.session_state.selected_date_display} - Timeslot range: {timeslot_start} - {timeslot_end}")
 
         for location_name, url_template in location_urls.items():
             url = url_template.format(date=st.session_state.selected_date)
@@ -113,7 +122,7 @@ if st.session_state.selected_date:
             filtered_slots = {}
             for slot in available_slots:
                 hour = int(slot.split(':')[0])
-                if timeslot_start <= hour <= timeslot_end:
+                if selected_timeslot_range[0] <= hour <= selected_timeslot_range[1]:
                     filtered_slots[slot] = available_slots[slot]
 
             if filtered_slots:
