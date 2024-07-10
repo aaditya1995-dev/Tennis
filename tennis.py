@@ -5,7 +5,8 @@ from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-# Function to check availability
+
+# Function to check availability for the existing websites
 def check_availability(url):
     # Set up Selenium options
     options = Options()
@@ -53,9 +54,62 @@ def check_availability(url):
 
     return available_slots
 
+
+# Function to check availability for the new website
+def check_availability_better(url):
+    # Set up Selenium options
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument('--disable-gpu')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+
+    # Initialize WebDriver
+    driver = webdriver.Chrome(options=options)
+
+    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})  # Using defaultdict with nested dict
+
+    try:
+        # Load the webpage
+        driver.get(url)
+
+        # Wait for the necessary elements to load
+        driver.implicitly_wait(4)  # Adjust as needed
+
+        # Find all elements with class 'ClassCardComponent__Row-sc-1v7d176-1'
+        class_card_elements = driver.find_elements(By.CSS_SELECTOR, '.ClassCardComponent__Row-sc-1v7d176-1')
+
+        # Process each found element
+        for element in class_card_elements:
+            time_element = element.find_element(By.CLASS_NAME, 'ClassCardComponent__ClassTime-sc-1v7d176-3')
+            time_slot = driver.execute_script("return arguments[0].textContent.trim();", time_element)
+
+            cost_element = element.find_element(By.CLASS_NAME, 'ClassCardComponent__Price-sc-1v7d176-14')
+            cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
+
+            spaces_element = element.find_element(By.CSS_SELECTOR, '.ContextualComponent__BookWrap-sc-eu3gk6-1')
+            spaces_text = driver.execute_script("return arguments[0].textContent.trim();", spaces_element)
+
+            # Extract the number of spaces available
+            count = int(spaces_text.split()[0])  # Extract the integer value
+
+            if count > 0:
+                available_slots[time_slot]['count'] = count
+                available_slots[time_slot]['cost'] = cost
+
+    except Exception as e:
+        st.error(f"An error occurred while processing {url}: {e}")
+    finally:
+        # Quit the driver
+        driver.quit()
+
+    return available_slots
+
+
 # Helper function to generate time labels
 def generate_time_labels():
     return [f"{hour:02d}:00" for hour in range(7, 24)]
+
 
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
@@ -78,7 +132,9 @@ next_seven_dates = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in ra
 location_urls = {
     "Regent's Park": "https://regents.parksports.co.uk/Booking/BookByDate#?date={date}&role=guest",
     "Kennington Park": "https://clubspark.lta.org.uk/kenningtonpark/Booking/BookByDate#?date={date}&role=guest",
-    "Tanner St. Park": "https://clubspark.lta.org.uk/TannerStPark/Booking/BookByDate#?date={date}&role=guest"
+    "Tanner St. Park": "https://clubspark.lta.org.uk/TannerStPark/Booking/BookByDate#?date={date}&role=guest",
+    "Islington Tennis Centre (Indoor)": "https://bookings.better.org.uk/location/islington-tennis-centre/tennis-court-indoor/{date}/by-time",
+    "Islington Tennis Centre (Outdoor)": "https://bookings.better.org.uk/location/islington-tennis-centre/tennis-court-outdoor/{date}/by-time"
 }
 
 # Display buttons for each of the next 7 days if no date is selected
@@ -112,11 +168,15 @@ if st.session_state.selected_date:
 
     # Display availability based on selected date and timeslot range
     if st.button("Check Availability"):
-        st.write(f"Checking availability for {st.session_state.selected_date_display} between {timeslot_start} - {timeslot_end}")
+        st.write(
+            f"Checking availability for {st.session_state.selected_date_display} between {timeslot_start} - {timeslot_end}")
 
         for location_name, url_template in location_urls.items():
             url = url_template.format(date=st.session_state.selected_date)
-            available_slots = check_availability(url)
+            if "better.org.uk" in url:
+                available_slots = check_availability_better(url)
+            else:
+                available_slots = check_availability(url)
 
             # Filter availability based on selected timeslot range
             filtered_slots = {}
