@@ -5,7 +5,6 @@ from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-
 # Function to check availability for the existing websites
 def check_availability(url):
     # Set up Selenium options
@@ -174,6 +173,13 @@ if st.session_state.selected_date:
         for location_name, url_template in location_urls.items():
             url = url_template.format(date=st.session_state.selected_date)
             if "better.org.uk" in url:
+                # Check if the selected date is 7 days from now
+                selected_date_obj = datetime.strptime(st.session_state.selected_date, "%Y-%m-%d")
+
+                if selected_date_obj.date() == (today + timedelta(days=6)).date():
+                    st.write(f"{location_name} has not released booking slots for {st.session_state.selected_date_display} yet.")
+                    continue
+
                 available_slots = check_availability_better(url)
             else:
                 available_slots = check_availability(url)
