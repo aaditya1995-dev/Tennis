@@ -122,7 +122,7 @@ if st.session_state.selected_date:
             filtered_slots = {}
             for slot in available_slots:
                 hour = int(slot.split(':')[0])
-                if selected_timeslot_range[0] <= hour <= selected_timeslot_range[1]:
+                if selected_timeslot_range[0] <= hour < selected_timeslot_range[1]:
                     filtered_slots[slot] = available_slots[slot]
 
             if filtered_slots:
