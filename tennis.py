@@ -55,7 +55,7 @@ def check_availability(url):
 
 # Helper function to generate time labels
 def generate_time_labels():
-    return [f"{hour:02d}:00" for hour in range(24)]
+    return [f"{hour:02d}:00" for hour in range(7, 24)]
 
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
@@ -101,7 +101,7 @@ if st.session_state.selected_date:
     st.write("Select a timeslot range:")
     time_labels = generate_time_labels()
     timeslot_start, timeslot_end = st.select_slider(
-        "Select timeslot range (hour of day):",
+        "",
         options=time_labels,
         value=(time_labels[0], time_labels[-1])
     )
