@@ -112,7 +112,7 @@ if st.session_state.selected_date:
 
     # Display availability based on selected date and timeslot range
     if st.button("Check Availability"):
-        st.write(f"Checking availability for {st.session_state.selected_date_display} - Timeslot range: {timeslot_start} - {timeslot_end}")
+        st.write(f"Checking availability for {st.session_state.selected_date_display} between {timeslot_start} - {timeslot_end}")
 
         for location_name, url_template in location_urls.items():
             url = url_template.format(date=st.session_state.selected_date)
