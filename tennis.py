@@ -135,4 +135,4 @@ if st.session_state.selected_date:
                                 unsafe_allow_html=True
                             )
             else:
-                st.write(f"No available slots found for {location_name}.")
+True
