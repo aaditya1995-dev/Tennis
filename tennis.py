@@ -143,14 +143,14 @@ if st.session_state.selected_date is None:
         if st.button(day):
             st.session_state.selected_date = next_seven_dates[i]
             st.session_state.selected_date_display = next_seven_days[i]
-            st.experimental_rerun()
+            st.rerun()
 
 # If a date is selected, show the selected date and allow timeslot range selection
 if st.session_state.selected_date:
     st.write(f"Selected date: **{st.session_state.selected_date_display}**")
     if st.button("Reset"):
         st.session_state.selected_date = None
-        st.experimental_rerun()
+        st.rerun()
 
     # Allow the user to select a timeslot range using a select_slider
     st.write("Select a timeslot range:")
