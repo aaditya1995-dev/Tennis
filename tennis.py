@@ -1,114 +1,61 @@
 import streamlit as st
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+from seleniumbase import SB
 from datetime import datetime, timedelta
 from collections import defaultdict
 
 # Function to check availability for the existing websites
 def check_availability(url):
-    # Set up Selenium options
-    options = Options()
-    options.add_argument("--headless=new")
-    options.add_argument('--disable-gpu')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
+    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})
 
-    # Initialize WebDriver
-    driver = webdriver.Chrome(options=options)
+    with SB(uc=True, headless=True) as sb:
+        try:
+            sb.get(url)
+            sb.wait_for_element('.book-interval.not-booked', timeout=10)
 
-    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})  # Using defaultdict with nested dict
+            not_booked_elements = sb.find_elements('.book-interval.not-booked')
 
-    try:
-        # Load the webpage
-        driver.get(url)
+            for element in not_booked_elements:
+                booking_slot = sb.execute_script("return arguments[0].querySelector('.available-booking-slot').textContent.trim();", element).replace('Book at ', '')
+                cost = sb.execute_script("return arguments[0].querySelector('.cost').textContent.trim();", element)
 
-        # Wait for the necessary elements to load
-        driver.implicitly_wait(2)  # Adjust as needed
+                available_slots[booking_slot]['count'] += 1
+                available_slots[booking_slot]['cost'] = cost
 
-        # Find all elements with class 'book-interval not-booked'
-        not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
-
-        # Process each found element
-        for element in not_booked_elements:
-            booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
-            booking_slot = driver.execute_script("return arguments[0].textContent.trim();", booking_slot_element)
-
-            # Trim 'Book at ' prefix
-            if booking_slot.startswith('Book at '):
-                booking_slot = booking_slot.replace('Book at ', '')
-
-            # Extract cost information
-            cost_element = element.find_element(By.CLASS_NAME, 'cost')
-            cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
-
-            available_slots[booking_slot]['count'] += 1
-            available_slots[booking_slot]['cost'] = cost
-
-    except Exception as e:
-        st.error(f"An error occurred while processing {url}: {e}")
-    finally:
-        # Quit the driver
-        driver.quit()
+        except Exception as e:
+            st.error(f"An error occurred while processing {url}: {e}")
 
     return available_slots
-
 
 # Function to check availability for the new website
 def check_availability_better(url):
-    # Set up Selenium options
-    options = Options()
-    options.add_argument("--headless=new")
-    options.add_argument('--disable-gpu')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
+    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})
 
-    # Initialize WebDriver
-    driver = webdriver.Chrome(options=options)
+    with SB(uc=True, headless=True) as sb:
+        try:
+            sb.get(url)
+            sb.wait_for_element('.ClassCardComponent__Row-sc-1v7d176-1', timeout=10)
 
-    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})  # Using defaultdict with nested dict
+            class_card_elements = sb.find_elements('.ClassCardComponent__Row-sc-1v7d176-1')
 
-    try:
-        # Load the webpage
-        driver.get(url)
+            for element in class_card_elements:
+                time_slot = sb.execute_script("return arguments[0].querySelector('.ClassCardComponent__ClassTime-sc-1v7d176-3').textContent.trim();", element)
+                cost = sb.execute_script("return arguments[0].querySelector('.ClassCardComponent__Price-sc-1v7d176-14').textContent.trim();", element)
+                spaces_text = sb.execute_script("return arguments[0].querySelector('.ContextualComponent__BookWrap-sc-eu3gk6-1').textContent.trim();", element)
 
-        # Wait for the necessary elements to load
-        driver.implicitly_wait(4)  # Adjust as needed
+                count = int(spaces_text.split()[0])
 
-        # Find all elements with class 'ClassCardComponent__Row-sc-1v7d176-1'
-        class_card_elements = driver.find_elements(By.CSS_SELECTOR, '.ClassCardComponent__Row-sc-1v7d176-1')
+                if count > 0:
+                    available_slots[time_slot]['count'] = count
+                    available_slots[time_slot]['cost'] = cost
 
-        # Process each found element
-        for element in class_card_elements:
-            time_element = element.find_element(By.CLASS_NAME, 'ClassCardComponent__ClassTime-sc-1v7d176-3')
-            time_slot = driver.execute_script("return arguments[0].textContent.trim();", time_element)
-
-            cost_element = element.find_element(By.CLASS_NAME, 'ClassCardComponent__Price-sc-1v7d176-14')
-            cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
-
-            spaces_element = element.find_element(By.CSS_SELECTOR, '.ContextualComponent__BookWrap-sc-eu3gk6-1')
-            spaces_text = driver.execute_script("return arguments[0].textContent.trim();", spaces_element)
-
-            # Extract the number of spaces available
-            count = int(spaces_text.split()[0])  # Extract the integer value
-
-            if count > 0:
-                available_slots[time_slot]['count'] = count
-                available_slots[time_slot]['cost'] = cost
-
-    except Exception as e:
-        st.error(f"An error occurred while processing {url}: {e}")
-    finally:
-        # Quit the driver
-        driver.quit()
+        except Exception as e:
+            st.error(f"An error occurred while processing {url}: {e}")
 
     return available_slots
-
 
 # Helper function to generate time labels
 def generate_time_labels():
     return [f"{hour:02d}:00" for hour in range(7, 24)]
-
 
 # Streamlit UI
 st.title('Booking Slot Availability Checker')
