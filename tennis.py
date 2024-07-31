@@ -5,8 +5,11 @@ from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timedelta
 from collections import defaultdict
 
+print("Script started")
+
 # Function to check availability for the existing websites
 def check_availability(url):
+    print(f"Checking availability for URL: {url}")
     # Set up Selenium options
     options = Options()
     options.add_argument("--headless=new")
@@ -16,18 +19,22 @@ def check_availability(url):
 
     # Initialize WebDriver
     driver = webdriver.Chrome(options=options)
+    print("WebDriver initialized")
 
     available_slots = defaultdict(lambda: {'count': 0, 'cost': None})  # Using defaultdict with nested dict
 
     try:
         # Load the webpage
+        print(f"Attempting to load webpage: {url}")
         driver.get(url)
 
         # Wait for the necessary elements to load
         driver.implicitly_wait(2)  # Adjust as needed
+        print("Waited for elements to load")
 
         # Find all elements with class 'book-interval not-booked'
         not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
+        print(f"Found {len(not_booked_elements)} not booked elements")
 
         # Process each found element
         for element in not_booked_elements:
@@ -44,18 +51,23 @@ def check_availability(url):
 
             available_slots[booking_slot]['count'] += 1
             available_slots[booking_slot]['cost'] = cost
+            print(f"Processed slot: {booking_slot}, Cost: {cost}")
 
     except Exception as e:
+        print(f"Error occurred while processing {url}: {e}")
         st.error(f"An error occurred while processing {url}: {e}")
     finally:
         # Quit the driver
         driver.quit()
+        print("WebDriver quit")
 
+    print(f"Available slots for {url}: {available_slots}")
     return available_slots
 
 
 # Function to check availability for the new website
 def check_availability_better(url):
+    print(f"Checking availability for better.org.uk URL: {url}")
     # Set up Selenium options
     options = Options()
     options.add_argument("--headless=new")
@@ -65,18 +77,22 @@ def check_availability_better(url):
 
     # Initialize WebDriver
     driver = webdriver.Chrome(options=options)
+    print("WebDriver initialized for better.org.uk")
 
     available_slots = defaultdict(lambda: {'count': 0, 'cost': None})  # Using defaultdict with nested dict
 
     try:
         # Load the webpage
+        print(f"Attempting to load webpage: {url}")
         driver.get(url)
 
         # Wait for the necessary elements to load
         driver.implicitly_wait(4)  # Adjust as needed
+        print("Waited for elements to load")
 
         # Find all elements with class 'ClassCardComponent__Row-sc-1v7d176-1'
         class_card_elements = driver.find_elements(By.CSS_SELECTOR, '.ClassCardComponent__Row-sc-1v7d176-1')
+        print(f"Found {len(class_card_elements)} class card elements")
 
         # Process each found element
         for element in class_card_elements:
@@ -95,13 +111,17 @@ def check_availability_better(url):
             if count > 0:
                 available_slots[time_slot]['count'] = count
                 available_slots[time_slot]['cost'] = cost
+                print(f"Processed slot: {time_slot}, Count: {count}, Cost: {cost}")
 
     except Exception as e:
+        print(f"Error occurred while processing {url}: {e}")
         st.error(f"An error occurred while processing {url}: {e}")
     finally:
         # Quit the driver
         driver.quit()
+        print("WebDriver quit")
 
+    print(f"Available slots for {url}: {available_slots}")
     return available_slots
 
 
@@ -111,6 +131,7 @@ def generate_time_labels():
 
 
 # Streamlit UI
+print("Starting Streamlit UI")
 st.title('Booking Slot Availability Checker')
 
 # Session state to handle date and timeslot selection
@@ -122,10 +143,12 @@ if 'selected_timeslot_range' not in st.session_state:
 
 # Get the current date
 today = datetime.today()
+print(f"Current date: {today}")
 
 # Generate the next 7 days
 next_seven_days = [(today + timedelta(days=i)).strftime("%A, %d %B") for i in range(7)]
 next_seven_dates = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+print(f"Next seven days: {next_seven_days}")
 
 # Dictionary to map URLs to location names (including query parameters)
 location_urls = {
@@ -143,6 +166,7 @@ if st.session_state.selected_date is None:
         if st.button(day):
             st.session_state.selected_date = next_seven_dates[i]
             st.session_state.selected_date_display = next_seven_days[i]
+            print(f"Date selected: {st.session_state.selected_date}")
             st.rerun()
 
 # If a date is selected, show the selected date and allow timeslot range selection
@@ -150,6 +174,7 @@ if st.session_state.selected_date:
     st.write(f"Selected date: **{st.session_state.selected_date_display}**")
     if st.button("Reset"):
         st.session_state.selected_date = None
+        print("Date reset")
         st.rerun()
 
     # Allow the user to select a timeslot range using a select_slider
@@ -164,19 +189,23 @@ if st.session_state.selected_date:
     # Convert selected timeslot range to integers for processing
     selected_timeslot_range = (int(timeslot_start.split(':')[0]), int(timeslot_end.split(':')[0]))
     st.session_state.selected_timeslot_range = selected_timeslot_range
+    print(f"Selected timeslot range: {selected_timeslot_range}")
 
     # Display availability based on selected date and timeslot range
     if st.button("Check Availability"):
+        print(f"Checking availability for {st.session_state.selected_date_display} between {timeslot_start} - {timeslot_end}")
         st.write(
             f"Checking availability for {st.session_state.selected_date_display} between {timeslot_start} - {timeslot_end}")
 
         for location_name, url_template in location_urls.items():
             url = url_template.format(date=st.session_state.selected_date)
+            print(f"Checking availability for {location_name}: {url}")
             if "better.org.uk" in url:
                 # Check if the selected date is 7 days from now
                 selected_date_obj = datetime.strptime(st.session_state.selected_date, "%Y-%m-%d")
 
                 if selected_date_obj.date() == (today + timedelta(days=6)).date():
+                    print(f"{location_name} has not released booking slots for {st.session_state.selected_date_display} yet.")
                     st.write(f"{location_name} has not released booking slots for {st.session_state.selected_date_display} yet.")
                     continue
 
@@ -190,6 +219,8 @@ if st.session_state.selected_date:
                 hour = int(slot.split(':')[0])
                 if selected_timeslot_range[0] <= hour < selected_timeslot_range[1]:
                     filtered_slots[slot] = available_slots[slot]
+
+            print(f"Filtered slots for {location_name}: {filtered_slots}")
 
             if filtered_slots:
                 with st.container():
@@ -210,4 +241,7 @@ if st.session_state.selected_date:
                                 unsafe_allow_html=True
                             )
             else:
+                print(f"No available slots found for {location_name}")
                 st.write(f"No available slots found for {location_name}.")
+
+print("Script completed")
