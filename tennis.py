@@ -29,11 +29,11 @@ def check_availability(url):
         print("Webpage loaded successfully")
 
         print("Waiting for elements to load")
-        driver.implicitly_wait(5)  # Increased wait time
+        driver.implicitly_wait(5)
         print("Wait completed")
 
         print("Searching for not-booked elements")
-        not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
+        not_booked_elements = driver.find_elements(By.CSS_SELECTOR, 'a.book-interval.not-booked')
         print(f"Found {len(not_booked_elements)} not-booked elements")
 
         if len(not_booked_elements) == 0:
@@ -46,21 +46,25 @@ def check_availability(url):
         for element in not_booked_elements:
             try:
                 print("Processing a not-booked element")
+
+                # Extract cost
+                cost_element = element.find_element(By.CLASS_NAME, 'cost')
+                cost = cost_element.text.strip()
+                print(f"Found cost: {cost}")
+
+                # Extract booking slot
                 booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
-                booking_slot = driver.execute_script("return arguments[0].textContent.trim();", booking_slot_element)
+                booking_slot = booking_slot_element.text.strip()
                 print(f"Found booking slot: {booking_slot}")
 
                 if booking_slot.startswith('Book at '):
                     booking_slot = booking_slot.replace('Book at ', '')
                     print(f"Trimmed booking slot: {booking_slot}")
 
-                cost_element = element.find_element(By.CLASS_NAME, 'cost')
-                cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
-                print(f"Found cost: {cost}")
-
                 available_slots[booking_slot]['count'] += 1
                 available_slots[booking_slot]['cost'] = cost
-                print(f"Updated available slots: {booking_slot} - Count: {available_slots[booking_slot]['count']}, Cost: {cost}")
+                print(
+                    f"Updated available slots: {booking_slot} - Count: {available_slots[booking_slot]['count']}, Cost: {cost}")
             except Exception as e:
                 print(f"Error processing an element: {e}")
 
