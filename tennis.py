@@ -29,37 +29,41 @@ def check_availability(url):
         print("Webpage loaded successfully")
 
         print("Waiting for elements to load")
-        driver.implicitly_wait(5)
+        driver.implicitly_wait(10)  # Increased wait time
         print("Wait completed")
 
-        print("Searching for not-booked elements")
-        not_booked_elements = driver.find_elements(By.CSS_SELECTOR, 'a.book-interval.not-booked')
-        print(f"Found {len(not_booked_elements)} not-booked elements")
+        print("Searching for available-booking-slot elements")
+        booking_slot_elements = driver.find_elements(By.CSS_SELECTOR, 'span.available-booking-slot')
+        print(f"Found {len(booking_slot_elements)} available booking slot elements")
 
-        if len(not_booked_elements) == 0:
-            print("No not-booked elements found. Checking page source.")
+        if len(booking_slot_elements) == 0:
+            print("No available booking slot elements found. Checking page source.")
             page_source = driver.page_source
             print(f"Page source length: {len(page_source)}")
-            print("First 500 characters of page source:")
-            print(page_source[:500])
+            print("First 1000 characters of page source:")
+            print(page_source[:1000])
 
-        for element in not_booked_elements:
+        for element in booking_slot_elements:
             try:
-                print("Processing a not-booked element")
-
-                # Extract cost
-                cost_element = element.find_element(By.CLASS_NAME, 'cost')
-                cost = cost_element.text.strip()
-                print(f"Found cost: {cost}")
+                print("Processing an available booking slot element")
 
                 # Extract booking slot
-                booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
-                booking_slot = booking_slot_element.text.strip()
+                booking_slot = element.text.strip()
                 print(f"Found booking slot: {booking_slot}")
 
                 if booking_slot.startswith('Book at '):
                     booking_slot = booking_slot.replace('Book at ', '')
                     print(f"Trimmed booking slot: {booking_slot}")
+
+                # Try to find the cost in the parent element
+                parent = element.find_element(By.XPATH, '..')
+                try:
+                    cost_element = parent.find_element(By.CLASS_NAME, 'cost')
+                    cost = cost_element.text.strip()
+                    print(f"Found cost: {cost}")
+                except:
+                    cost = "Cost not found"
+                    print("Cost element not found")
 
                 available_slots[booking_slot]['count'] += 1
                 available_slots[booking_slot]['cost'] = cost
