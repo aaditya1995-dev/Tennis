@@ -29,46 +29,38 @@ def check_availability(url):
         print("Webpage loaded successfully")
 
         print("Waiting for elements to load")
-        driver.implicitly_wait(10)  # Increased wait time
+        driver.implicitly_wait(5)  # Increased wait time
         print("Wait completed")
 
-        print("Searching for available-booking-slot elements")
-        booking_slot_elements = driver.find_elements(By.CSS_SELECTOR, 'span.available-booking-slot')
-        print(f"Found {len(booking_slot_elements)} available booking slot elements")
+        print("Searching for not-booked elements")
+        not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
+        print(f"Found {len(not_booked_elements)} not-booked elements")
 
-        if len(booking_slot_elements) == 0:
-            print("No available booking slot elements found. Checking page source.")
+        if len(not_booked_elements) == 0:
+            print("No not-booked elements found. Checking page source.")
             page_source = driver.page_source
             print(f"Page source length: {len(page_source)}")
-            print("First 1000 characters of page source:")
-            print(page_source[:1000])
+            print("First 500 characters of page source:")
+            print(page_source[:500])
 
-        for element in booking_slot_elements:
+        for element in not_booked_elements:
             try:
-                print("Processing an available booking slot element")
-
-                # Extract booking slot
-                booking_slot = element.text.strip()
+                print("Processing a not-booked element")
+                booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
+                booking_slot = driver.execute_script("return arguments[0].textContent.trim();", booking_slot_element)
                 print(f"Found booking slot: {booking_slot}")
 
                 if booking_slot.startswith('Book at '):
                     booking_slot = booking_slot.replace('Book at ', '')
                     print(f"Trimmed booking slot: {booking_slot}")
 
-                # Try to find the cost in the parent element
-                parent = element.find_element(By.XPATH, '..')
-                try:
-                    cost_element = parent.find_element(By.CLASS_NAME, 'cost')
-                    cost = cost_element.text.strip()
-                    print(f"Found cost: {cost}")
-                except:
-                    cost = "Cost not found"
-                    print("Cost element not found")
+                cost_element = element.find_element(By.CLASS_NAME, 'cost')
+                cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
+                print(f"Found cost: {cost}")
 
                 available_slots[booking_slot]['count'] += 1
                 available_slots[booking_slot]['cost'] = cost
-                print(
-                    f"Updated available slots: {booking_slot} - Count: {available_slots[booking_slot]['count']}, Cost: {cost}")
+                print(f"Updated available slots: {booking_slot} - Count: {available_slots[booking_slot]['count']}, Cost: {cost}")
             except Exception as e:
                 print(f"Error processing an element: {e}")
 
