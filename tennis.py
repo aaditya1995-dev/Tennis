@@ -9,59 +9,71 @@ print("Script started")
 
 # Function to check availability for the existing websites
 def check_availability(url):
-    print(f"Checking availability for URL: {url}")
-    # Set up Selenium options
+    print(f"Starting check_availability for URL: {url}")
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
 
-    # Initialize WebDriver
-    driver = webdriver.Chrome(options=options)
-    print("WebDriver initialized")
-
-    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})  # Using defaultdict with nested dict
+    driver = None
+    available_slots = defaultdict(lambda: {'count': 0, 'cost': None})
 
     try:
-        # Load the webpage
+        print("Initializing WebDriver")
+        driver = webdriver.Chrome(options=options)
+        print("WebDriver initialized successfully")
+
         print(f"Attempting to load webpage: {url}")
         driver.get(url)
+        print("Webpage loaded successfully")
 
-        # Wait for the necessary elements to load
-        driver.implicitly_wait(2)  # Adjust as needed
-        print("Waited for elements to load")
+        print("Waiting for elements to load")
+        driver.implicitly_wait(5)  # Increased wait time
+        print("Wait completed")
 
-        # Find all elements with class 'book-interval not-booked'
+        print("Searching for not-booked elements")
         not_booked_elements = driver.find_elements(By.CSS_SELECTOR, '.book-interval.not-booked')
-        print(f"Found {len(not_booked_elements)} not booked elements")
+        print(f"Found {len(not_booked_elements)} not-booked elements")
 
-        # Process each found element
+        if len(not_booked_elements) == 0:
+            print("No not-booked elements found. Checking page source.")
+            page_source = driver.page_source
+            print(f"Page source length: {len(page_source)}")
+            print("First 500 characters of page source:")
+            print(page_source[:500])
+
         for element in not_booked_elements:
-            booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
-            booking_slot = driver.execute_script("return arguments[0].textContent.trim();", booking_slot_element)
+            try:
+                print("Processing a not-booked element")
+                booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
+                booking_slot = driver.execute_script("return arguments[0].textContent.trim();", booking_slot_element)
+                print(f"Found booking slot: {booking_slot}")
 
-            # Trim 'Book at ' prefix
-            if booking_slot.startswith('Book at '):
-                booking_slot = booking_slot.replace('Book at ', '')
+                if booking_slot.startswith('Book at '):
+                    booking_slot = booking_slot.replace('Book at ', '')
+                    print(f"Trimmed booking slot: {booking_slot}")
 
-            # Extract cost information
-            cost_element = element.find_element(By.CLASS_NAME, 'cost')
-            cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
+                cost_element = element.find_element(By.CLASS_NAME, 'cost')
+                cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
+                print(f"Found cost: {cost}")
 
-            available_slots[booking_slot]['count'] += 1
-            available_slots[booking_slot]['cost'] = cost
-            print(f"Processed slot: {booking_slot}, Cost: {cost}")
+                available_slots[booking_slot]['count'] += 1
+                available_slots[booking_slot]['cost'] = cost
+                print(f"Updated available slots: {booking_slot} - Count: {available_slots[booking_slot]['count']}, Cost: {cost}")
+            except Exception as e:
+                print(f"Error processing an element: {e}")
 
     except Exception as e:
-        print(f"Error occurred while processing {url}: {e}")
+        print(f"An error occurred in check_availability: {e}")
         st.error(f"An error occurred while processing {url}: {e}")
     finally:
-        # Quit the driver
-        driver.quit()
-        print("WebDriver quit")
+        if driver:
+            print("Quitting WebDriver")
+            driver.quit()
+            print("WebDriver quit successfully")
 
-    print(f"Available slots for {url}: {available_slots}")
+    print(f"Final available slots for {url}: {dict(available_slots)}")
     return available_slots
 
 
