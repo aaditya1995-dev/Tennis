@@ -235,4 +235,3 @@ if st.session_state.selected_date:
                 st.write(f"No available slots found for {location_name}.")
 
 print("Script completed")
-True
