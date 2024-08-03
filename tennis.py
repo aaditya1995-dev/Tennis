@@ -20,6 +20,7 @@ def setup_webdriver():
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     return webdriver.Chrome(options=options)
 
+
 def check_availability(url):
     print(f"Starting check_availability for URL: {url}")
     driver = None
@@ -31,12 +32,33 @@ def check_availability(url):
 
         print(f"Attempting to load webpage: {url}")
         driver.get(url)
+
+        # Wait for the page to load completely
+        WebDriverWait(driver, 30).until(
+            lambda d: d.execute_script('return document.readyState') == 'complete'
+        )
         print("Webpage loaded successfully")
 
         print("Waiting for elements to load")
-        wait = WebDriverWait(driver, 20)
-        not_booked_elements = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//a[contains(@class, 'book-interval') and contains(@class, 'not-booked')]")))
-        print(f"Found {len(not_booked_elements)} not-booked elements")
+        wait = WebDriverWait(driver, 30)
+
+        # Try different selectors based on the provided HTML structure
+        selectors = [
+            (By.CSS_SELECTOR, 'a.book-interval.not-booked'),
+            (By.XPATH, "//a[contains(@class, 'book-interval') and contains(@class, 'not-booked')]"),
+            (By.XPATH, "//a[starts-with(@data-test-id, 'booking-')]"),
+        ]
+
+        not_booked_elements = []
+        for selector in selectors:
+            try:
+                not_booked_elements = wait.until(EC.presence_of_all_elements_located(selector))
+                if not_booked_elements:
+                    print(f"Found {len(not_booked_elements)} not-booked elements using selector: {selector}")
+                    break
+            except Exception as e:
+                print(f"Selector {selector} failed: {str(e)}")
+                continue
 
         if len(not_booked_elements) == 0:
             print("No not-booked elements found. Checking page source.")
@@ -44,35 +66,36 @@ def check_availability(url):
             print(f"Page source length: {len(page_source)}")
             print("First 1000 characters of page source:")
             print(page_source[:1000])
+            print("Last 1000 characters of page source:")
+            print(page_source[-1000:])
+        else:
+            for element in not_booked_elements:
+                try:
+                    print("Processing a not-booked element")
+                    booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
+                    booking_slot = driver.execute_script("return arguments[0].textContent.trim();",
+                                                         booking_slot_element)
+                    print(f"Found booking slot: {booking_slot}")
 
-        for element in not_booked_elements:
-            try:
-                print("Processing a not-booked element")
-                booking_slot_element = element.find_element(By.CLASS_NAME, 'available-booking-slot')
-                booking_slot = driver.execute_script("return arguments[0].textContent.trim();", booking_slot_element)
-                print(f"Found booking slot: {booking_slot}")
+                    if booking_slot.startswith('Book at '):
+                        booking_slot = booking_slot.replace('Book at ', '')
+                        print(f"Trimmed booking slot: {booking_slot}")
 
-                if booking_slot.startswith('Book at '):
-                    booking_slot = booking_slot.replace('Book at ', '')
-                    print(f"Trimmed booking slot: {booking_slot}")
+                    cost_element = element.find_element(By.CLASS_NAME, 'cost')
+                    cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
+                    print(f"Found cost: {cost}")
 
-                cost_element = element.find_element(By.CLASS_NAME, 'cost')
-                cost = driver.execute_script("return arguments[0].textContent.trim();", cost_element)
-                print(f"Found cost: {cost}")
-
-                available_slots[booking_slot]['count'] += 1
-                available_slots[booking_slot]['cost'] = cost
-                print(f"Updated available slots: {booking_slot} - Count: {available_slots[booking_slot]['count']}, Cost: {cost}")
-            except Exception as e:
-                print(f"Error processing an element: {e}")
-                print(traceback.format_exc())
+                    available_slots[booking_slot]['count'] += 1
+                    available_slots[booking_slot]['cost'] = cost
+                    print(
+                        f"Updated available slots: {booking_slot} - Count: {available_slots[booking_slot]['count']}, Cost: {cost}")
+                except Exception as e:
+                    print(f"Error processing an element: {e}")
+                    print(traceback.format_exc())
 
     except Exception as e:
         print(f"An error occurred in check_availability: {e}")
         print(traceback.format_exc())
-        if driver:
-            print(f"Page source: {driver.page_source[:1000]}")
-        st.error(f"An error occurred while processing {url}: {e}")
     finally:
         if driver:
             print("Quitting WebDriver")
